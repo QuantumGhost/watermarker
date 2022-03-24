@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -7,14 +7,35 @@ import sys
 import math
 import textwrap
 
-from PIL import Image, ImageFont, ImageDraw, ImageEnhance, ImageChops
+from PIL import Image, ImageFont, ImageDraw, ImageEnhance, ImageChops, ExifTags
 
+
+def _rotate(image): 
+    if not hasattr(image, '_getexif'):
+        return image
+    exif = image._getexif()
+    if not exif:
+        return image
+
+    for tag, label in ExifTags.TAGS.items():
+        if label == 'Orientation':
+            orientation = tag
+            break
+    if orientation in exif:
+        if exif[orientation] == 3:
+            image = image.rotate(180, expand=True)
+        elif exif[orientation] == 6:
+            image = image.rotate(270, expand=True)
+        elif exif[orientation] == 8:
+            image = image.rotate(90, expand=True)
+    return image
 
 def add_mark(imagePath, mark, args):
     '''
     添加水印，然后保存图片
     '''
     im = Image.open(imagePath)
+    im = _rotate(im)
 
     image = mark(im)
     name = os.path.basename(imagePath)
